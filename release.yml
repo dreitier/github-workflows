@@ -1,0 +1,80 @@
+name: Release Premium Extension
+on:
+  workflow_call:
+    inputs:
+      package:
+        required: true
+        type: string
+    secrets:
+      DELIVERY_AWS_ACCESS_KEY:
+        required: true
+      DELIVERY_AWS_SECRET_ACCESS_KEY:
+        required: true
+      DELIVERY_AWS_S3_BUCKET:
+        required: true
+      DELIVERY_AWS_REGION:
+        required: true
+      DELIVERY_WORDPRESS_DEPLOYER_USERNAME:
+        required: true
+      DELIVERY_WORDPRESS_DEPLOYER_APPLICATION_PASSWORD:
+        required: true
+      DELIVERY_WORDPRESS_PLUGIN_ENDPOINT:
+        required: true
+      DELIVERY_WORDPRESS_PRODUCT_ID:
+        required: true
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    name: Release premium extension
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set version variables
+      id: vars
+      run: |
+        echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
+        echo "::set-output name=tag::${GITHUB_REF#refs/*/}"
+        echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
+
+    - name: Set delivery variables
+      id: delivery
+      run: |
+        echo "::set-output name=zip_file::${PACKAGE}-${VERSION}.zip"
+        echo "::set-output name=zip_subdir::${SUBDIR}"
+        echo "::set-output name=s3_subdir::${PACKAGE}"
+      env:
+        PACKAGE: ${{ inputs.package }}
+        SUBDIR: ${{ inputs.package }}
+        VERSION: ${{ steps.vars.outputs.tag }}
+
+    - name: Find and Replace
+      uses: jacobtomlinson/gha-find-replace@master
+      with:
+        find: "@VERSION@"
+        replace: ${{ steps.vars.outputs.tag }}
+
+    - name: ZIP workspace
+      uses: schakko/action-zip-workspace@main
+      with:
+        filename: ${{ steps.delivery.outputs.zip_file }}
+        subdirectory: ${{ steps.delivery.outputs.zip_subdir }}
+
+    - name: Upload releases to GitHub
+      uses: ncipollo/release-action@v1
+      with:
+        artifacts:  ${{ steps.delivery.outputs.zip_file }}
+        allowUpdates: true
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Upload to S3
+      uses: hkusu/s3-upload-action@v2
+      with:
+        aws-access-key-id: ${{ secrets.DELIVERY_AWS_ACCESS_KEY}}
+        aws-secret-access-key: ${{ secrets.DELIVERY_AWS_SECRET_ACCESS_KEY}}
+        aws-bucket: ${{ secrets.DELIVERY_AWS_S3_BUCKET }}
+        aws-region: ${{ secrets.DELIVERY_AWS_REGION }}
+        file-path: ${{ steps.delivery.outputs.zip_file }}
+        bucket-root: /
+        destination-dir: /${{ steps.delivery.outputs.s3_subdir }}
+        output-file-url: 'true'
