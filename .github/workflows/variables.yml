@@ -1,0 +1,93 @@
+name: Detect active Git environment and derive version
+on:
+  workflow_call:
+    inputs:
+      package:
+        required: true
+        type: string
+      is_official_release:
+        required: false
+        default: false
+        type: boolean
+      do_replace_version:
+        required: false
+        default: true
+        type: boolean
+      replace_version_string:
+        required: false
+        default: "@VERSION@"
+        type: string
+
+    outputs:
+      version:
+        description: "Version to use, e.g. the official tag or a combination between $branch-$shashort"
+        value: ${{ jobs.detect_variables.outputs.version }}
+
+      git_branch:
+        description: "Current git branch"
+        value: ${{ jobs.detect_variables.outputs.git_branch }}
+
+      git_tag:
+        description: "Current git tag"
+        value: ${{ jobs.detect_variables.outputs.git_tag }}
+
+      git_sha_short:
+        description: "Current git commit hash"
+        value: ${{ jobs.detect_variables.outputs.git_sha_short }}
+
+      artifact_name:
+        description: "Official artifact name"
+        value: ${{ jobs.detect_variables.outputs.artifact_name }}
+jobs:
+  defaults:
+    env:
+      # @see https://github.com/actions/runner/issues/1483#issuecomment-1279933184
+      IS_OFFICIAL_RELEASE: ${{ inputs.is_official_release == 'true' && 'true' || 'false'  }}
+ 
+  detect_variables:
+    runs-on: ubuntu-latest
+    name: Detect current variables
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      git_branch: ${{ steps.git.outputs.branch }}
+      git_tag: ${{ steps.git.outputs.tag }}
+      git_sha_short: ${{ steps.git.outputs.sha_short }}
+      artifact_name: ${{ steps.delivery.outputs.artifact_name }}
+      package: ${{ inputs.package }}
+        
+    steps:
+    - name: Set Git variables
+      id: git
+      run: |
+        echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
+        echo "::set-output name=tag::${GITHUB_REF#refs/*/}"
+        echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
+
+    - name: Set version variable
+      id: version
+      run: |
+        if [ "${IS_OFFICIAL_RELEASE}" ]; then
+          echo "::set-output name=version::${TAG}"
+        else
+          echo "::set-output name=version::${BRANCH}-${SHA_SHORT}"
+        else
+      env:
+        BRANCH: ${{ steps.git.outputs.branch }}
+        TAG: ${{ steps.git.outputs.tag }}
+        SHA_SHORT: ${{ steps.git.outputs.sha_short }}
+        
+    - name: Set delivery variables
+      id: delivery
+      run: |
+        echo "::set-output name=artifact_name::${PACKAGE}-${VERSION}"
+      env:
+        PACKAGE: ${{ inputs.package }}
+        SUBDIR: ${{ inputs.package }}
+        VERSION: ${{ steps.version.outputs.version }}
+
+    - name: Find and Replace
+      uses: jacobtomlinson/gha-find-replace@master
+      if: ${{ inputs.do_replace_version }}
+      with:
+        find: "${{ intputs.replace_version_string }}"
+        replace: ${{ steps.version.outputs.version }}
