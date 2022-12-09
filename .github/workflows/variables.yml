@@ -31,6 +31,10 @@ on:
         description: "Official artifact name"
         value: ${{ jobs.detect_variables.outputs.artifact_name }}
 
+      package:
+        description: "Package name as provided"
+        value: ${{ jobs.detect_variables.outputs.package }}
+
 jobs:
   detect_variables:
     runs-on: ubuntu-latest
