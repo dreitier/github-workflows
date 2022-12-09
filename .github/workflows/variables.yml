@@ -9,14 +9,6 @@ on:
         required: false
         default: false
         type: boolean
-      do_replace_version:
-        required: false
-        default: true
-        type: boolean
-      replace_version_string:
-        required: false
-        default: "@VERSION@"
-        type: string
 
     outputs:
       version:
@@ -87,10 +79,3 @@ jobs:
         PACKAGE: ${{ inputs.package }}
         SUBDIR: ${{ inputs.package }}
         VERSION: ${{ steps.version.outputs.version }}
-
-    - name: Find and Replace
-      uses: jacobtomlinson/gha-find-replace@master
-      if: ${{ inputs.do_replace_version }}
-      with:
-        find: "${{ inputs.replace_version_string }}"
-        replace: ${{ steps.version.outputs.version }}
