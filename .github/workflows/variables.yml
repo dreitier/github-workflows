@@ -38,12 +38,12 @@ on:
       artifact_name:
         description: "Official artifact name"
         value: ${{ jobs.detect_variables.outputs.artifact_name }}
+
+env:
+  # @see https://github.com/actions/runner/issues/1483#issuecomment-1279933184
+  IS_OFFICIAL_RELEASE: ${{ inputs.is_official_release == 'true' && 'true' || 'false'  }}
+
 jobs:
-  defaults:
-    env:
-      # @see https://github.com/actions/runner/issues/1483#issuecomment-1279933184
-      IS_OFFICIAL_RELEASE: ${{ inputs.is_official_release == 'true' && 'true' || 'false'  }}
- 
   detect_variables:
     runs-on: ubuntu-latest
     name: Detect current variables
