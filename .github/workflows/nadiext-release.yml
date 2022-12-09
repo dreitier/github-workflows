@@ -24,57 +24,76 @@ on:
         required: true
 
 jobs:
-  release:
+  variables:
+    name: Detect Git and release variables
+    uses: dreitier/github-workflows/.github/workflows/variables.yml@main
+    with:
+      package: ${{ inputs.package }}
+      is_official_release: true
+
+  package_and_deploy:
+    name: Package and deploy
     runs-on: ubuntu-latest
-    name: Release premium extension
+    needs: variables
     steps:
     - uses: actions/checkout@v2
 
-    - name: Set version variables
-      id: vars
+    - name: Set job variables
+      id: zip_variables
       run: |
-        echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
-        echo "::set-output name=tag::${GITHUB_REF#refs/*/}"
-        echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
-
-    - name: Set delivery variables
-      id: delivery
-      run: |
-        echo "::set-output name=zip_file::${PACKAGE}-${VERSION}.zip"
-        echo "::set-output name=zip_subdir::${SUBDIR}"
-        echo "::set-output name=s3_subdir::${PACKAGE}"
+        echo "zip_file=${ARTIFACT_NAME}.zip"  >> $GITHUB_OUTPUT
       env:
-        PACKAGE: ${{ inputs.package }}
-        SUBDIR: ${{ inputs.package }}
-        VERSION: ${{ steps.vars.outputs.tag }}
+        ARTIFACT_NAME: ${{ needs.variables.outputs.artifact_name }}
 
-    - name: Find and Replace
+    - name: Update version tag
       uses: jacobtomlinson/gha-find-replace@master
       with:
         find: "@VERSION@"
-        replace: ${{ steps.vars.outputs.tag }}
+        replace: ${{ needs.variables.outputs.version }}
 
     - name: ZIP workspace
+      id: zip
       uses: schakko/action-zip-workspace@main
       with:
-        filename: ${{ steps.delivery.outputs.zip_file }}
-        subdirectory: ${{ steps.delivery.outputs.zip_subdir }}
+        filename: ${{ steps.zip_variables.outputs.zip_file }}
+        subdirectory: ${{ needs.variables.outputs.package }}
 
-    - name: Upload releases to GitHub
+    - name: Upload release to GitHub
+      id: upload
       uses: ncipollo/release-action@v1
       with:
-        artifacts:  ${{ steps.delivery.outputs.zip_file }}
+        artifacts:  ${{ steps.zip_variables.outputs.zip_file }}
         allowUpdates: true
+        tag: ${{ steps.variables.outputs.version }}
         token: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Upload to S3
+      id: s3_upload
       uses: hkusu/s3-upload-action@v2
       with:
         aws-access-key-id: ${{ secrets.DELIVERY_AWS_ACCESS_KEY}}
         aws-secret-access-key: ${{ secrets.DELIVERY_AWS_SECRET_ACCESS_KEY}}
         aws-bucket: ${{ secrets.DELIVERY_AWS_S3_BUCKET }}
         aws-region: ${{ secrets.DELIVERY_AWS_REGION }}
-        file-path: ${{ steps.delivery.outputs.zip_file }}
+        file-path: ${{ steps.zip_variables.outputs.zip_file }}
         bucket-root: /
-        destination-dir: /${{ steps.delivery.outputs.s3_subdir }}
+        destination-dir: /${{ needs.variables.outputs.package }}
         output-file-url: 'true'
+
+    - name: Release in WordPress
+      id: release
+      run: |
+        response=$(curl --insecure -XPOST -i \
+        -H 'Accept: application/json' \
+        -H 'Content-Type: application/json' \
+        --user "${{ secrets.DELIVERY_WORDPRESS_DEPLOYER_USERNAME }}:${{ secrets.DELIVERY_WORDPRESS_DEPLOYER_APPLICATION_PASSWORD }}" \
+        -d '{
+              "artifact_url": "${{ env.ARTIFACT_URL }}",
+              "release": { "version": "${{ env.VERSION}}"}
+            }' \
+          "${{ secrets.DELIVERY_WORDPRESS_PLUGIN_ENDPOINT }}/products/${{ secrets.DELIVERY_WORDPRESS_PRODUCT_ID }}/release")
+          
+          echo "Response: $response"
+      env:
+        ARTIFACT_URL: ${{ steps.s3_upload.outputs.file-url }}
+        VERSION: ${{ steps.variables.outputs.version }}
