@@ -53,18 +53,18 @@ jobs:
     - name: Set Git variables
       id: git
       run: |
-        echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
-        echo "::set-output name=tag::${GITHUB_REF#refs/*/}"
-        echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
+        echo "branch=$(echo ${GITHUB_REF#refs/heads/})" >> $GITHUB_OUTPUT
+        echo "tag=${GITHUB_REF#refs/*/}" >> $GITHUB_OUTPUT
+        echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
 
     - name: Set version variable
       id: version
       run: |
         echo "${IS_OFFICIAL_RELEASE}"
         if [ "${IS_OFFICIAL_RELEASE}" = "true" ]; then
-          echo "::set-output name=version::${TAG}"
+          echo "version=${TAG}" >> $GITHUB_OUTPUT
         else
-          echo "::set-output name=version::${BRANCH}-${SHA_SHORT}"
+          echo "version=${BRANCH}-${SHA_SHORT}" >> $GITHUB_OUTPUT
         fi
       env:
         BRANCH: ${{ steps.git.outputs.branch }}
@@ -74,7 +74,7 @@ jobs:
     - name: Set delivery variables
       id: delivery
       run: |
-        echo "::set-output name=artifact_name::${PACKAGE}-${VERSION}"
+        echo "artifact_name=${PACKAGE}-${VERSION}"  >> $GITHUB_OUTPUT
       env:
         PACKAGE: ${{ inputs.package }}
         SUBDIR: ${{ inputs.package }}
