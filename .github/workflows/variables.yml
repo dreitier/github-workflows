@@ -71,7 +71,7 @@ jobs:
           echo "::set-output name=version::${TAG}"
         else
           echo "::set-output name=version::${BRANCH}-${SHA_SHORT}"
-        else
+        fi
       env:
         BRANCH: ${{ steps.git.outputs.branch }}
         TAG: ${{ steps.git.outputs.tag }}
