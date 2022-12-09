@@ -17,11 +17,13 @@ on:
 jobs:
   packaging:
     runs-on: ubuntu-latest
-    name: Detect current variables
+    name: Crate ZIP file and upload to GitHub
     outputs:
       zip_file: ${{ steps.variables.outputs.zip_file }}
 
     steps:
+    - uses: actions/checkout@v2
+
     - name: Set variables
       id: variables
       run: |
