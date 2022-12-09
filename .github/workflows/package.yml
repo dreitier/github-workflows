@@ -13,9 +13,8 @@ on:
       zip_file:
         description: "Name of generated ZIP file"
         value: ${{ jobs.packaging.outputs.zip_file }}
+
 jobs:
-  defaults:
- 
   packaging:
     runs-on: ubuntu-latest
     name: Detect current variables
