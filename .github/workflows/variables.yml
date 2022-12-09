@@ -66,7 +66,8 @@ jobs:
     - name: Set version variable
       id: version
       run: |
-        if [ "${IS_OFFICIAL_RELEASE}" ]; then
+        echo "${IS_OFFICIAL_RELEASE}"
+        if [ "${IS_OFFICIAL_RELEASE}" = "true" ]; then
           echo "::set-output name=version::${TAG}"
         else
           echo "::set-output name=version::${BRANCH}-${SHA_SHORT}"
