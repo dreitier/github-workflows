@@ -1,0 +1,47 @@
+name: Create deliverable package
+on:
+  workflow_call:
+    inputs:
+      artifact_name:
+        required: true
+        type: string
+      version:
+        required: true
+        type: string
+
+    outputs:
+      zip_file:
+        description: "Name of generated ZIP file"
+        value: ${{ jobs.packaging.outputs.zip_file }}
+jobs:
+  defaults:
+ 
+  packaging:
+    runs-on: ubuntu-latest
+    name: Detect current variables
+    outputs:
+      zip_file: ${{ steps.variables.outputs.zip_file }}
+
+    steps:
+    - name: Set variables
+      id: variables
+      run: |
+        echo "::set-output name=zip_file::${ARTIFACT_NAME}.zip"
+      env:
+        ARTIFACT_NAME: ${{ inputs.artifact_name }}
+
+    - name: ZIP workspace
+      id: zip
+      uses: schakko/action-zip-workspace@main
+      with:
+        filename: ${{ steps.variables.outputs.zip_file }}
+        subdirectory: ${{ inputs.subdirectory }}
+
+    - name: Upload releases to GitHub
+      id: upload
+      uses: ncipollo/release-action@v1
+      with:
+        artifacts:  ${{ steps.variables.outputs.zip_file }}
+        allowUpdates: true
+        tag: ${{ inputs.version }}
+        token: ${{ secrets.GITHUB_TOKEN }}
