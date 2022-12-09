@@ -83,7 +83,7 @@ jobs:
     - name: Release in WordPress
       id: release
       run: |
-        response=$(curl -XPOST -i \
+        response=$(curl -XPOST --fail -i \
         -H 'Accept: application/json' \
         -H 'Content-Type: application/json' \
         --user "${{ secrets.DELIVERY_WORDPRESS_DEPLOYER_USERNAME }}:${{ secrets.DELIVERY_WORDPRESS_DEPLOYER_APPLICATION_PASSWORD }}" \
