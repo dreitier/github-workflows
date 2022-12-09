@@ -60,6 +60,7 @@ jobs:
     - name: Set version variable
       id: version
       run: |
+        echo "${INPUT_OFFICIAL_RELEASE}"
         echo "${IS_OFFICIAL_RELEASE}"
         if [ "${IS_OFFICIAL_RELEASE}" = "true" ]; then
           echo "version=${TAG}" >> $GITHUB_OUTPUT
@@ -67,6 +68,7 @@ jobs:
           echo "version=${BRANCH}-${SHA_SHORT}" >> $GITHUB_OUTPUT
         fi
       env:
+        INPUT_OFFICIAL_RELEASE: ${{ inputs.is_official_release }}
         BRANCH: ${{ steps.git.outputs.branch }}
         TAG: ${{ steps.git.outputs.tag }}
         SHA_SHORT: ${{ steps.git.outputs.sha_short }}
