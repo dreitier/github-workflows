@@ -46,12 +46,19 @@ jobs:
         ARTIFACT_NAME: ${{ needs.variables.outputs.artifact_name }}
 
     - name: Update version tag
+      id: update_version
       uses: jacobtomlinson/gha-find-replace@v3
       with:
         find: "@VERSION@"
         include: "**.txt"
-        replace: ${{ needs.variables.outputs.version }}
+        replace: "HELLO WORLD"#${{ needs.variables.outputs.version }}
         regex: false
+
+    - name: "Debug modified files"
+      run: |
+        echo "Modified files: ${TOTAL}"
+      env:
+        TOTAL: ${{ steps.update_version.outputs.modifiedFiles }}
 
     - name: ZIP workspace
       id: zip
