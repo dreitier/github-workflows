@@ -60,6 +60,7 @@ jobs:
         pwd
         ls -al
         cat readme.txt
+        ls -al /github/workspace
       env:
         TOTAL: ${{ steps.update_version.outputs.modifiedFiles }}
 
