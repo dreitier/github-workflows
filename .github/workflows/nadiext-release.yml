@@ -50,6 +50,7 @@ jobs:
       with:
         find: "@VERSION@"
         replace: ${{ needs.variables.outputs.version }}
+        regex: false
 
     - name: ZIP workspace
       id: zip
