@@ -57,6 +57,7 @@ jobs:
     - name: "Debug modified files"
       run: |
         echo "Modified files: ${TOTAL}"
+        pwd
         ls -al
         cat readme.txt
       env:
