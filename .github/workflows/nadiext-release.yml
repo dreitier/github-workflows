@@ -50,19 +50,8 @@ jobs:
       uses: jacobtomlinson/gha-find-replace@v3
       with:
         find: "@VERSION@"
-        include: "**.txt"
-        replace: "HELLO WORLD"#${{ needs.variables.outputs.version }}
+        replace: ${{ needs.variables.outputs.version }}
         regex: false
-
-    - name: "Debug modified files"
-      run: |
-        echo "Modified files: ${TOTAL}"
-        pwd
-        ls -al
-        cat readme.txt
-        touch test.txt
-      env:
-        TOTAL: ${{ steps.update_version.outputs.modifiedFiles }}
 
     - name: ZIP workspace
       id: zip
