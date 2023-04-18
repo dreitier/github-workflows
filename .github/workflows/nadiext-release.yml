@@ -46,9 +46,10 @@ jobs:
         ARTIFACT_NAME: ${{ needs.variables.outputs.artifact_name }}
 
     - name: Update version tag
-      uses: jacobtomlinson/gha-find-replace@master
+      uses: jacobtomlinson/gha-find-replace@v3
       with:
-        find: "@VERSION@"
+        find: "VERSION"
+        include: "**"
         replace: ${{ needs.variables.outputs.version }}
         regex: false
 
